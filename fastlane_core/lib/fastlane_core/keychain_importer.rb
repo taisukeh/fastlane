@@ -10,6 +10,7 @@ module FastlaneCore
       command << " &> /dev/null" unless output
 
       Helper.backticks(command, print: output)
+      UI.user_error!("Failed to import #{path} into #{keychain_path}") unless $?.success?
 
       # When security supports partition lists, also add the partition IDs
       # See https://openradar.appspot.com/28524119
@@ -21,6 +22,7 @@ module FastlaneCore
         command << " &> /dev/null" unless output
 
         Helper.backticks(command, print: output)
+        UI.user_error!("Failed to set-key-partition-list to #{keychain_path}") unless $?.success?
       end
     end
   end

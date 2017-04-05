@@ -16,7 +16,7 @@ describe Fastlane do
         allow(File).to receive(:exist?).with(keychain_path).and_return(true)
         expect(File).to receive(:exist?).with(cert_name).and_return(true)
         allow(FastlaneCore::Helper).to receive(:backticks).with(allowed_command, print: false)
-        expect(FastlaneCore::Helper).to receive(:backticks).with(expected_command, print: false)
+        expect(FastlaneCore::Helper).to receive(:backticks).with(expected_command, print: false) { `true` }
 
         Fastlane::FastFile.new.parse("lane :test do
           import_certificate ({
@@ -25,6 +25,62 @@ describe Fastlane do
             certificate_password: '#{password}'
           })
         end").runner.execute(:test)
+      end
+
+      it "raise if import failed" do
+        cert_name = "test.cer"
+        keychain = 'test.keychain'
+        password = 'testpassword'
+
+        keychain_path = File.expand_path(File.join('~', 'Library', 'Keychains', keychain))
+        expected_command = "security import #{cert_name} -k '#{keychain_path}' -P #{password} -T /usr/bin/codesign -T /usr/bin/security &> /dev/null"
+
+        # this command is also sent on macOS Sierra and we need to allow it or else the test will fail
+        allowed_command = "security set-key-partition-list -S apple-tool:,apple: -k \"\" #{keychain_path.shellescape} &> /dev/null"
+
+        allow(File).to receive(:exist?).and_return(false)
+        allow(File).to receive(:exist?).with(keychain_path).and_return(true)
+        expect(File).to receive(:exist?).with(cert_name).and_return(true)
+        allow(FastlaneCore::Helper).to receive(:backticks).with(allowed_command, print: false)
+        expect(FastlaneCore::Helper).to receive(:backticks).with(expected_command, print: false) { `false` }
+
+        expect do
+          Fastlane::FastFile.new.parse("lane :test do
+            import_certificate ({
+              keychain_name: '#{keychain}',
+              certificate_path: '#{cert_name}',
+              certificate_password: '#{password}'
+            })
+          end").runner.execute(:test)
+        end.to raise_error(FastlaneCore::Interface::FastlaneError)
+      end
+
+      it "raise if set-key-partition-list failed" do
+        cert_name = "test.cer"
+        keychain = 'test.keychain'
+        password = 'testpassword'
+
+        keychain_path = File.expand_path(File.join('~', 'Library', 'Keychains', keychain))
+        expected_command = "security import #{cert_name} -k '#{keychain_path}' -P #{password} -T /usr/bin/codesign -T /usr/bin/security &> /dev/null"
+
+        # this command is also sent on macOS Sierra and we need to allow it or else the test will fail
+        allowed_command = "security set-key-partition-list -S apple-tool:,apple: -k \"\" #{keychain_path.shellescape} &> /dev/null"
+
+        allow(File).to receive(:exist?).and_return(false)
+        allow(File).to receive(:exist?).with(keychain_path).and_return(true)
+        expect(File).to receive(:exist?).with(cert_name).and_return(true)
+        allow(FastlaneCore::Helper).to receive(:backticks).with(allowed_command, print: false) { `false` }
+        expect(FastlaneCore::Helper).to receive(:backticks).with(expected_command, print: false) { `true` }
+
+        expect do
+          Fastlane::FastFile.new.parse("lane :test do
+            import_certificate ({
+              keychain_name: '#{keychain}',
+              certificate_path: '#{cert_name}',
+              certificate_password: '#{password}'
+            })
+          end").runner.execute(:test)
+        end.to raise_error(FastlaneCore::Interface::FastlaneError)
       end
 
       it "works with certificate and password that contain spaces or '\'" do
@@ -42,7 +98,7 @@ describe Fastlane do
         allow(File).to receive(:exist?).with(keychain_path).and_return(true)
         expect(File).to receive(:exist?).with(cert_name).and_return(true)
         allow(FastlaneCore::Helper).to receive(:backticks).with(allowed_command, print: false)
-        expect(FastlaneCore::Helper).to receive(:backticks).with(expected_command, print: false)
+        expect(FastlaneCore::Helper).to receive(:backticks).with(expected_command, print: false) { `true` }
 
         Fastlane::FastFile.new.parse("lane :test do
           import_certificate ({
@@ -68,7 +124,7 @@ describe Fastlane do
         allow(File).to receive(:exist?).with(keychain_path).and_return(true)
         expect(File).to receive(:exist?).with(cert_name).and_return(true)
         allow(FastlaneCore::Helper).to receive(:backticks).with(allowed_command, print: true)
-        expect(FastlaneCore::Helper).to receive(:backticks).with(expected_command, print: true)
+        expect(FastlaneCore::Helper).to receive(:backticks).with(expected_command, print: true) { `true` }
 
         Fastlane::FastFile.new.parse("lane :test do
           import_certificate ({
